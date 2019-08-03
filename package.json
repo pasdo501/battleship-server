@@ -1,0 +1,19 @@
+{
+  "name": "battleship-server",
+  "version": "1.0.0",
+  "description": "Websocket Node server for battleship app",
+  "main": "server.js",
+  "scripts": {
+    "start": "nodemon server.js"
+  },
+  "repository": "git@github.com:pasdo501/battleship-server.git",
+  "author": "pasdo501 <dominikpaschke@hotmail.com>",
+  "license": "ISC",
+  "private": true,
+  "dependencies": {
+    "express": "^4.17.1",
+    "global": "^4.4.0",
+    "nodemon": "^1.19.1",
+    "socket.io": "^2.2.0"
+  }
+}
