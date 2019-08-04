@@ -1,69 +1,117 @@
-const io = require("socket.io")();
+import socketServer from "socket.io";
+import Player from "./player";
+
+const io = socketServer();
 io.origins("*:*");
 
-const emptyPlayer = { socket: null, board: null, ready: false };
 let playerOne;
 let playerTwo;
+let turn;
 
 function reset() {
-  playerOne = { ...emptyPlayer };
-  playerTwo = { ...emptyPlayer };
+  playerOne = new Player();
+  playerTwo = new Player();
 }
 
 io.on("connection", (socket) => {
   console.log("Connection attempt");
 
-  if (playerOne.socket === null) {
-    playerOne.socket = socket;
+  if (playerOne.getSocket() === null) {
+    playerOne.setSocket(socket);
     socket.emit("connected", "playerOne");
-  } else if (playerTwo.socket === null) {
-    playerTwo.socket = socket;
+  } else if (playerTwo.getSocket() === null) {
+    playerTwo.setSocket(socket);
     socket.emit("connected", "playerTwo");
   } else {
     socket.disconnect();
   }
 
-  if (playerOne.socket !== null && playerTwo.socket !== null) {
+  if (playerOne.getSocket() !== null && playerTwo.getSocket() !== null) {
     io.emit("playersReady");
   }
 
   socket.on("disconnect", () => {
-    if (socket === playerOne.socket) {
+    // TODO: Emit a disconnected event to the other player so they can
+    // deal with it
+    if (socket === playerOne.getSocket()) {
       console.log("Player One disconnected");
-      playerOne = { ...emptyPlayer };
+      playerOne = new Player();
     } else {
       console.log("Player two disconnected");
-      playerTwo = { ...emptyPlayer };
+      playerTwo = new Player();
     }
   });
 
   socket.on("initialise_board", (board) => {
-    if (socket === playerOne.socket) {
-      playerOne.board = board;
-      playerOne = { ...playerOne, board, ready: true };
+    if (socket === playerOne.getSocket()) {
+      playerOne.setBoard(board);
+      playerOne.setReady(true);
     } else {
-      playerTwo = { ...playerTwo, board, ready: true };
+      playerTwo.setBoard(board);
+      playerTwo.setReady(true);
     }
 
-    if (playerOne.ready && playerTwo.ready) {
+    if (playerOne.isReady() && playerTwo.isReady()) {
       io.emit("redirect");
+      playerOne.setReady(false);
+      playerTwo.setReady(false);
+    }
+  });
+
+  socket.on("gameReady", () => {
+    if (socket === playerOne.getSocket()) {
+      playerOne.setReady(true);
+    } else {
+      playerTwo.setReady(true);
+    }
+
+    if (playerOne.isReady() && playerTwo.isReady()) {
+      let playerString;
+      if (Math.floor(Math.random() * 2)) {
+        playerString = "playerOne";
+        turn = playerOne.getSocket();
+      } else {
+        playerString = "playerTwo";
+        turn = playerTwo.getSocket();
+      }
+
+      io.emit("startGame", playerString);
     }
   });
 
   socket.on("shoot", ({ row, column }) => {
-    let success;
+    // Shouldn't need this, but in case people play around with
+    // the client side variables
+    if (socket !== turn) return;
+    let hit;
+    let type;
     let otherSocket;
-    if (socket === playerOne.socket) {
+    let destroyed;
+
+    if (socket === playerOne.getSocket()) {
       // Player One shot
-      success = playerTwo.board[row][column].type ? true : false;
-      otherSocket = playerTwo.socket;
+      type = playerTwo.getBoard()[row][column].type;
+      hit = type ? true : false;
+      if (hit) {
+        destroyed = playerTwo.recordHitAndCheckDestroyed(type);
+      }
+      otherSocket = playerTwo.getSocket();
     } else {
       // Player Two shot
-      success = playerOne.board[row][column].type ? true : false;
-      otherSocket = playerOne.socket;
+      type = playerOne.getBoard()[row][column].type;
+      hit = type ? true : false;
+      if (hit) {
+        destroyed = playerOne.recordHitAndCheckDestroyed(type);
+      }
+      otherSocket = playerOne.getSocket();
     }
-    socket.emit("shotResult", row, column, success);
-    otherSocket.emit("receiveShot", row, column);
+
+    const shooterMessage = destroyed ? `You sunk ~player's ${type.name}` : "";
+    const shooteeMessage = destroyed ? `~Player~ sunk your ${type.name}` : "";
+
+    socket.emit("shotResult", row, column, hit, shooterMessage);
+    otherSocket.emit("receiveShot", row, column, shooteeMessage);
+    turn = otherSocket;
   });
 });
 

@@ -4,7 +4,7 @@
   "description": "Websocket Node server for battleship app",
   "main": "server.js",
   "scripts": {
-    "start": "nodemon server.js"
+    "start": "nodemon --exec babel-node server.js"
   },
   "repository": "git@github.com:pasdo501/battleship-server.git",
   "author": "pasdo501 <dominikpaschke@hotmail.com>",
@@ -15,5 +15,10 @@
     "global": "^4.4.0",
     "nodemon": "^1.19.1",
     "socket.io": "^2.2.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.5.5",
+    "@babel/node": "^7.5.5",
+    "@babel/preset-env": "^7.5.5"
   }
 }
