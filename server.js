@@ -17,9 +17,11 @@ io.on("connection", (socket) => {
   console.log("Connection attempt");
 
   if (playerOne.getSocket() === null) {
+    console.log('Player One Connected')
     playerOne.setSocket(socket);
     socket.emit("connected", "playerOne");
   } else if (playerTwo.getSocket() === null) {
+    console.log('Player Two connected')
     playerTwo.setSocket(socket);
     socket.emit("connected", "playerTwo");
   } else {
