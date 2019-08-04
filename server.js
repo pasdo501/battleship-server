@@ -1,5 +1,5 @@
 import socketServer from "socket.io";
-import Player from "./player";
+import Player from "./Player";
 
 const io = socketServer();
 io.origins("*:*");
@@ -36,9 +36,15 @@ io.on("connection", (socket) => {
     if (socket === playerOne.getSocket()) {
       console.log("Player One disconnected");
       playerOne = new Player();
+      if (playerTwo.getSocket() !== null) {
+        playerTwo.getSocket().emit("opponentDisconnect")
+      }
     } else {
       console.log("Player Two disconnected");
       playerTwo = new Player();
+      if (playerOne.getSocket() !== null) {
+        playerOne.getSocket().emit("opponentDisconnect")
+      }
     }
   });
 
@@ -115,9 +121,11 @@ io.on("connection", (socket) => {
     const shooteeMessage = destroyed
       ? `${otherPlayer.getName()} sunk your ${type.name}!`
       : "";
+    
+    const defeated = otherPlayer.isDefeated()
 
-    socket.emit("shotResult", row, column, hit, shooterMessage);
-    otherPlayer.getSocket().emit("receiveShot", row, column, shooteeMessage);
+    socket.emit("shotResult", row, column, hit, shooterMessage, defeated);
+    otherPlayer.getSocket().emit("receiveShot", row, column, shooteeMessage, defeated);
     turn = otherPlayer.getSocket();
   });
 });
