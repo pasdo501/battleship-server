@@ -1,53 +1,55 @@
-const io = require("socket.io")()
-io.origins("*:*")
+const io = require("socket.io")();
+io.origins("*:*");
 
-const emptyPlayer = {
-    id: null,
-    board: null
-}
+const emptyPlayer = { id: null, board: null, ready: false };
 let playerOne;
 let playerTwo;
 
-function reset () {
-    playerOne = { ...emptyPlayer }
-    playerTwo = { ...emptyPlayer }
+function reset() {
+  playerOne = { ...emptyPlayer };
+  playerTwo = { ...emptyPlayer };
 }
 
 io.on("connection", (socket) => {
-    console.log('Connection attempt')
-    
-    if (playerOne.id === null) {
-        playerOne.id = socket
-        socket.emit('connected', 'playerOne')
-    } else if (playerTwo.id === null) {
-        playerTwo.id = socket
-        socket.emit('connected', 'playerTwo')
+  console.log("Connection attempt");
+
+  if (playerOne.id === null) {
+    playerOne.id = socket;
+    socket.emit("connected", "playerOne");
+  } else if (playerTwo.id === null) {
+    playerTwo.id = socket;
+    socket.emit("connected", "playerTwo");
+  } else {
+    socket.disconnect();
+  }
+
+  if (playerOne.id !== null && playerTwo.id !== null) {
+      io.emit('playersReady')
+  }
+
+  socket.on("disconnect", () => {
+    if (socket === playerOne.id) {
+      playerOne = { ...emptyPlayer };
     } else {
-        socket.disconnect()
+      playerTwo = { ...emptyPlayer };
+    }
+  });
+
+  socket.on("initialise_board", (board) => {
+    if (socket === playerOne.id) {
+      playerOne.board = board;
+      playerOne = {...playerOne, board, ready: true }
+    } else {
+      playerTwo = { ...playerTwo, board, ready: true }
     }
 
-    socket.on('disconnect', () => {
-        if (socket === playerOne.id) {
-            playerOne =  { ...emptyPlayer }
-        } else {
-            playerTwo = { ...emptyPlayer }
-        }
-    })
+    if (playerOne.ready && playerTwo.ready) {
+        io.emit('redirect')
+    }
+  });
+});
 
-    socket.on('initialise_board', (board) => {
-        if (socket === playerOne.id) {
-            playerOne.board = board
-            console.log('Player One\'s board:')
-            console.log(playerOne.board)
-        } else {
-            playerTwo.board = board
-            console.log('Player Two\'s board:');
-            console.log(playerTwo.board)
-        }
-    })
-})
-
-reset()
-const port = 8080
-io.listen(port)
-console.log(`Server listening on port ${port}...`)
+reset();
+const port = 8080;
+io.listen(port);
+console.log(`Server listening on port ${port}...`);
