@@ -7,6 +7,7 @@ export default class Player {
     this.ready = null;
     this.hitsTaken = Array(numShipTypes).fill(0);
     this.shipsLeft = numShipTypes;
+    this.name = ''
   }
 
   isReady() {
@@ -31,6 +32,14 @@ export default class Player {
 
   setBoard(board) {
     this.board = board;
+  }
+
+  getName() {
+      return this.name
+  }
+
+  setName(name) {
+      this.name = name;
   }
 
   recordHitAndCheckDestroyed(ship) {
