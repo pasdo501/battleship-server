@@ -1,7 +1,7 @@
 const io = require("socket.io")();
 io.origins("*:*");
 
-const emptyPlayer = { id: null, board: null, ready: false };
+const emptyPlayer = { socket: null, board: null, ready: false };
 let playerOne;
 let playerTwo;
 
@@ -13,39 +13,57 @@ function reset() {
 io.on("connection", (socket) => {
   console.log("Connection attempt");
 
-  if (playerOne.id === null) {
-    playerOne.id = socket;
+  if (playerOne.socket === null) {
+    playerOne.socket = socket;
     socket.emit("connected", "playerOne");
-  } else if (playerTwo.id === null) {
-    playerTwo.id = socket;
+  } else if (playerTwo.socket === null) {
+    playerTwo.socket = socket;
     socket.emit("connected", "playerTwo");
   } else {
     socket.disconnect();
   }
 
-  if (playerOne.id !== null && playerTwo.id !== null) {
-      io.emit('playersReady')
+  if (playerOne.socket !== null && playerTwo.socket !== null) {
+    io.emit("playersReady");
   }
 
   socket.on("disconnect", () => {
-    if (socket === playerOne.id) {
+    if (socket === playerOne.socket) {
+      console.log("Player One disconnected");
       playerOne = { ...emptyPlayer };
     } else {
+      console.log("Player two disconnected");
       playerTwo = { ...emptyPlayer };
     }
   });
 
   socket.on("initialise_board", (board) => {
-    if (socket === playerOne.id) {
+    if (socket === playerOne.socket) {
       playerOne.board = board;
-      playerOne = {...playerOne, board, ready: true }
+      playerOne = { ...playerOne, board, ready: true };
     } else {
-      playerTwo = { ...playerTwo, board, ready: true }
+      playerTwo = { ...playerTwo, board, ready: true };
     }
 
     if (playerOne.ready && playerTwo.ready) {
-        io.emit('redirect')
+      io.emit("redirect");
     }
+  });
+
+  socket.on("shoot", ({ row, column }) => {
+    let success;
+    let otherSocket;
+    if (socket === playerOne.socket) {
+      // Player One shot
+      success = playerTwo.board[row][column].type ? true : false;
+      otherSocket = playerTwo.socket;
+    } else {
+      // Player Two shot
+      success = playerOne.board[row][column].type ? true : false;
+      otherSocket = playerOne.socket;
+    }
+    socket.emit("shotResult", row, column, success);
+    otherSocket.emit("receiveShot", row, column);
   });
 });
 
