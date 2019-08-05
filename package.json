@@ -12,7 +12,7 @@
   },
   "repository": "git@github.com:pasdo501/battleship-server.git",
   "author": "pasdo501 <dominikpaschke@hotmail.com>",
-  "license": "ISC",
+  "license": "MIT",
   "private": true,
   "dependencies": {
     "express": "^4.17.1",
