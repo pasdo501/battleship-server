@@ -17,11 +17,11 @@ io.on("connection", (socket) => {
   console.log("Connection attempt");
 
   if (playerOne.getSocket() === null) {
-    console.log('Player One Connected')
+    console.log("Player One Connected");
     playerOne.setSocket(socket);
     socket.emit("connected", "playerOne");
   } else if (playerTwo.getSocket() === null) {
-    console.log('Player Two connected')
+    console.log("Player Two connected");
     playerTwo.setSocket(socket);
     socket.emit("connected", "playerTwo");
   } else {
@@ -33,19 +33,17 @@ io.on("connection", (socket) => {
   }
 
   socket.on("disconnect", () => {
-    // TODO: Emit a disconnected event to the other player so they can
-    // deal with it
     if (socket === playerOne.getSocket()) {
       console.log("Player One disconnected");
       playerOne = new Player();
       if (playerTwo.getSocket() !== null) {
-        playerTwo.getSocket().emit("opponentDisconnect")
+        playerTwo.getSocket().emit("opponentDisconnect");
       }
     } else {
       console.log("Player Two disconnected");
       playerTwo = new Player();
       if (playerOne.getSocket() !== null) {
-        playerOne.getSocket().emit("opponentDisconnect")
+        playerOne.getSocket().emit("opponentDisconnect");
       }
     }
   });
@@ -57,11 +55,11 @@ io.on("connection", (socket) => {
       playerTwo.setName(name);
     }
 
-    if (playerOne.getName() !== '' && playerTwo.getName() !== '') {
-      io.emit('names', {
+    if (playerOne.getName() !== "" && playerTwo.getName() !== "") {
+      io.emit("names", {
         playerOne: playerOne.getName(),
-        playerTwo: playerTwo.getName()
-      })
+        playerTwo: playerTwo.getName(),
+      });
     }
   });
 
@@ -108,6 +106,7 @@ io.on("connection", (socket) => {
     if (socket !== turn) return;
 
     let destroyed = false;
+    const player = socket === playerOne.getSocket() ? playerOne : playerTwo;
     const otherPlayer =
       socket === playerOne.getSocket() ? playerTwo : playerOne;
 
@@ -121,13 +120,15 @@ io.on("connection", (socket) => {
       ? `You sunk ${otherPlayer.getName()}'s ${type.name}!`
       : "";
     const shooteeMessage = destroyed
-      ? `${otherPlayer.getName()} sunk your ${type.name}!`
+      ? `${player.getName()} sunk your ${type.name}!`
       : "";
-    
-    const defeated = otherPlayer.isDefeated()
+
+    const defeated = otherPlayer.isDefeated();
 
     socket.emit("shotResult", row, column, hit, shooterMessage, defeated);
-    otherPlayer.getSocket().emit("receiveShot", row, column, shooteeMessage, defeated);
+    otherPlayer
+      .getSocket()
+      .emit("receiveShot", row, column, shooteeMessage, defeated);
     turn = otherPlayer.getSocket();
   });
 });
