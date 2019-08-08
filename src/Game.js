@@ -143,6 +143,9 @@ export default class Game {
       this.turn = this[playerString].getSocket();
 
       this.io.to(this.room).emit("startGame", playerString);
+      this.broadcastSystemMessage(
+        `Game started, ${this[playerString].getName()} goes first.`
+      );
     }
   }
 
@@ -173,19 +176,21 @@ export default class Game {
       destroyed = otherPlayer.recordHitAndCheckDestroyed(type);
     }
 
-    const shooterMessage = destroyed
-      ? `You sunk ${otherPlayer.getName()}'s ${type.name}!`
-      : "";
-    const shooteeMessage = destroyed
-      ? `${this[player].getName()} sunk your ${type.name}!`
-      : "";
-
     const defeated = otherPlayer.isDefeated();
 
-    socket.emit("shotResult", row, column, hit, shooterMessage, defeated);
-    otherPlayer
-      .getSocket()
-      .emit("receiveShot", row, column, shooteeMessage, defeated);
+    socket.emit("shotResult", row, column, hit, defeated);
+    otherPlayer.getSocket().emit("receiveShot", row, column, defeated);
+
+    if (destroyed) {
+      this.sendSystemMessage(
+        this[player],
+        `You sunk ${otherPlayer.getName()}'s ${type.name}!`
+      );
+      this.sendSystemMessage(
+        otherPlayer,
+        `${this[player].getName()} sunk your ${type.name}!`
+      );
+    }
     this.turn = otherPlayer.getSocket();
   }
 
@@ -197,7 +202,6 @@ export default class Game {
    * @param {string} message The message
    */
   relayMessage(player, message) {
-    console.log('Sending message')
     const otherPlayer =
       this.playerOne === player ? this.playerTwo : this.playerOne;
     const timestamp = Date.now();
@@ -210,11 +214,30 @@ export default class Game {
       .emit("message", { ...commonContents, sender: player.getName() });
   }
 
-  sendSystemMessage(message) {
+  /**
+   * Send a message from the System to a given player
+   *
+   * @param {Player} player The player to send the message to
+   * @param {string} message The message
+   */
+  sendSystemMessage(player, message) {
+    player.getSocket().emit("message", {
+      sender: "[SYSTEM]",
+      timestamp: Date.now(),
+      message,
+    });
+  }
+
+  /**
+   * Send a message from the System to both players
+   *
+   * @param {string} message The message
+   */
+  broadcastSystemMessage(message) {
     this.io.to(this.room).emit("message", {
       sender: "[SYSTEM]",
       timestamp: Date.now(),
-      message
+      message,
     });
   }
 
