@@ -51,6 +51,7 @@ export default class Game {
     socket.on("shoot", ({ row, column }) =>
       this.shoot(socket, player, row, column)
     );
+    socket.on("chat", (message) => this.relayMessage(this[player], message));
 
     // If neither is null, both must be set now
     if (this.playerOne !== null && this.playerTwo !== null) {
@@ -142,6 +143,9 @@ export default class Game {
       this.turn = this[playerString].getSocket();
 
       this.io.to(this.room).emit("startGame", playerString);
+      this.broadcastSystemMessage(
+        `Game started, ${this[playerString].getName()} goes first.`
+      );
     }
   }
 
@@ -172,20 +176,69 @@ export default class Game {
       destroyed = otherPlayer.recordHitAndCheckDestroyed(type);
     }
 
-    const shooterMessage = destroyed
-      ? `You sunk ${otherPlayer.getName()}'s ${type.name}!`
-      : "";
-    const shooteeMessage = destroyed
-      ? `${this[player].getName()} sunk your ${type.name}!`
-      : "";
-
     const defeated = otherPlayer.isDefeated();
 
-    socket.emit("shotResult", row, column, hit, shooterMessage, defeated);
+    socket.emit("shotResult", row, column, hit, defeated);
+    otherPlayer.getSocket().emit("receiveShot", row, column, defeated);
+
+    if (destroyed) {
+      this.sendSystemMessage(
+        this[player],
+        `You sunk ${otherPlayer.getName()}'s ${type.name}!`
+      );
+      this.sendSystemMessage(
+        otherPlayer,
+        `${this[player].getName()} sunk your ${type.name}!`
+      );
+    }
+    this.turn = otherPlayer.getSocket();
+  }
+
+  /**
+   * Deal with player chat events.
+   *
+   *
+   * @param {Player} player Sending player
+   * @param {string} message The message
+   */
+  relayMessage(player, message) {
+    const otherPlayer =
+      this.playerOne === player ? this.playerTwo : this.playerOne;
+    const timestamp = Date.now();
+
+    const commonContents = { timestamp, message };
+
+    player.getSocket().emit("message", { ...commonContents, sender: "You" });
     otherPlayer
       .getSocket()
-      .emit("receiveShot", row, column, shooteeMessage, defeated);
-    this.turn = otherPlayer.getSocket();
+      .emit("message", { ...commonContents, sender: player.getName() });
+  }
+
+  /**
+   * Send a message from the System to a given player
+   *
+   * @param {Player} player The player to send the message to
+   * @param {string} message The message
+   */
+  sendSystemMessage(player, message) {
+    player.getSocket().emit("message", {
+      sender: "[SYSTEM]",
+      timestamp: Date.now(),
+      message,
+    });
+  }
+
+  /**
+   * Send a message from the System to both players
+   *
+   * @param {string} message The message
+   */
+  broadcastSystemMessage(message) {
+    this.io.to(this.room).emit("message", {
+      sender: "[SYSTEM]",
+      timestamp: Date.now(),
+      message,
+    });
   }
 
   /**
