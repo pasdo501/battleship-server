@@ -51,6 +51,7 @@ export default class Game {
     socket.on("shoot", ({ row, column }) =>
       this.shoot(socket, player, row, column)
     );
+    socket.on("chat", (message) => this.relayMessage(this[player], message));
 
     // If neither is null, both must be set now
     if (this.playerOne !== null && this.playerTwo !== null) {
@@ -186,6 +187,35 @@ export default class Game {
       .getSocket()
       .emit("receiveShot", row, column, shooteeMessage, defeated);
     this.turn = otherPlayer.getSocket();
+  }
+
+  /**
+   * Deal with player chat events.
+   *
+   *
+   * @param {Player} player Sending player
+   * @param {string} message The message
+   */
+  relayMessage(player, message) {
+    console.log('Sending message')
+    const otherPlayer =
+      this.playerOne === player ? this.playerTwo : this.playerOne;
+    const timestamp = Date.now();
+
+    const commonContents = { timestamp, message };
+
+    player.getSocket().emit("message", { ...commonContents, sender: "You" });
+    otherPlayer
+      .getSocket()
+      .emit("message", { ...commonContents, sender: player.getName() });
+  }
+
+  sendSystemMessage(message) {
+    this.io.to(this.room).emit("message", {
+      sender: "[SYSTEM]",
+      timestamp: Date.now(),
+      message
+    });
   }
 
   /**
