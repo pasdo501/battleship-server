@@ -6,7 +6,7 @@ import Player from "./Player";
 export default class Game {
   /**
    * Constructor
-   * 
+   *
    * @param {object} io The socket server object
    * @param {string} room The room ID for this game
    * @param {function} endGame Callback function to be called when both players disconnect
@@ -23,7 +23,7 @@ export default class Game {
   /**
    * Connect a player to the server, then set up event
    * listeners on the socket to respond to game events.
-   * 
+   *
    * @param {object} socket The player's socket
    */
   connectPlayer(socket) {
@@ -38,6 +38,7 @@ export default class Game {
     this[player] = new Player();
     this[player].setSocket(socket);
 
+    console.log(`${this.room}: ${player} connected`);
     socket.emit("connected", player);
 
     // Set up socket event listeners
@@ -59,31 +60,31 @@ export default class Game {
 
   /**
    * Function handling player disconnection events.
-   * 
+   *
    * Informs the other player that their opponent has disconnected
    * (if they are still connected). If both players are now disconnected,
    * run the end game callback function to clean up the game state.
-   * 
+   *
    * @param {string} player Which player disconnected
    */
   playerDisconnected(player) {
-    console.log(`Room ${this.room}: ${player} disconnected`);
+    console.log(`${this.room}: ${player} disconnected`);
     this[player] = null;
     const otherPlayer =
       player === "playerOne" ? this.playerTwo : this.playerOne;
     if (otherPlayer !== null && otherPlayer.getSocket() !== null) {
       otherPlayer.getSocket().emit("opponentDisconnect");
     } else if (otherPlayer === null) {
-        this.endGame();
+      this.endGame();
     }
   }
 
   /**
    * Set a given player's name.
-   * 
+   *
    * If after this function runs both players have a name set, inform
    * the room of their names.
-   * 
+   *
    * @param {string} player The player for which the name is being set
    * @param {string} name The player's name
    */
@@ -104,10 +105,10 @@ export default class Game {
 
   /**
    * Set a given player's board.
-   * 
-   * If after this function runs both players' boards are set, 
+   *
+   * If after this function runs both players' boards are set,
    * inform the room of this event with a directive to redirect.
-   * 
+   *
    * @param {string} player The player whose board is being initialised
    * @param {array} board The board
    */
@@ -124,10 +125,10 @@ export default class Game {
 
   /**
    * Handle a player being ready to start the game.
-   * 
+   *
    * If both players are ready, choose a random player, then
    * inform the room the game is ready and who will start.
-   * 
+   *
    * @param {string} player The player stating readiness
    */
   gameReady(player) {
@@ -146,11 +147,11 @@ export default class Game {
 
   /**
    * Simulate a shot at the opponent's board.
-   * 
+   *
    * Check if anything is hit, an if so, a boat is destroyed, and if the other
    * player is defeated after this. Individually inform both players of the outcome,
    * then toggle whose turn it is.
-   * 
+   *
    * @param {object} socket The socket initiating the shot
    * @param {string} player The initiating player
    * @param {int} row Row to shoot at
@@ -189,7 +190,7 @@ export default class Game {
 
   /**
    * Check if both players have been set. Utility method
-   * 
+   *
    * @return {boolean} False if either player is null
    */
   playersSet() {
@@ -198,7 +199,7 @@ export default class Game {
 
   /**
    * Check if both players are ready. Utility method
-   * 
+   *
    * @return {boolean} True if both players are ready.
    */
   playersReady() {

@@ -11,8 +11,6 @@ function reset() {
 }
 
 io.on("connection", (socket) => {
-  console.log(typeof socket)
-  console.log(typeof io)
   const { query } = socket.handshake;
   console.log("Connection attempt...");
   if (query.type !== "battleship") {
@@ -25,6 +23,7 @@ io.on("connection", (socket) => {
     socket.join(roomId);
     const roomSize = socket.adapter.rooms[roomId].length;
     if (roomSize !== 2) {
+      console.log(`${roomId}: invalid connection`);
       // Too many players in room, or only one in which case
       // you didn't actually join a new room
       socket.emit(
