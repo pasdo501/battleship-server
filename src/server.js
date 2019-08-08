@@ -14,7 +14,37 @@ function reset() {
 }
 
 io.on("connection", (socket) => {
-  console.log("Connection attempt");
+  const { query } = socket.handshake;
+  console.log("Connection attempt...");
+  if (query.type !== "battleship") {
+    console.log("Incorrect connection type");
+    socket.disconnect();
+  }
+
+  let { roomId } = query;
+  if (roomId !== "null") {
+    socket.join(roomId);
+    const roomSize = socket.adapter.rooms[roomId].length;
+    console.log(`Room id sent was ${roomId}`)
+    console.log(`Room size now ${roomSize}`)
+    if (roomSize !== 2) {
+      // Too many players in room, or only one in which case
+      // you didn't actually join a new room
+      socket.emit(
+        "invalidRoom",
+        roomSize > 2
+          ? "Sorry, that game is full."
+          : "That is not a valid game ID"
+      );
+      socket.disconnect();
+      return;
+    }
+  } else {
+    roomId = socket.id.substr(0, 5);
+    // Emit this as roomId for the front end
+    socket.emit("roomAllocation", roomId);
+    socket.join(roomId)
+  }
 
   if (playerOne.getSocket() === null) {
     console.log("Player One Connected");
