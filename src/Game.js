@@ -278,19 +278,28 @@ export default class Game {
     if (otherPlayer.hasRequestedRematch()) {
       this.io.to(this.room).emit("rematchAccepted");
       // Reset player state
-      let newPlayers = [];
-      for (let player of [this.playerOne, this.playerTwo]) {
-        const name = player.getName();
-        const socket = player.getSocket();
-
-        const newPlayer = new Player();
-        newPlayer.setName(name);
-        newPlayer.setSocket(socket);
-        newPlayers.push(newPlayer);
-      }
-
-      this.playerOne = newPlayers[0];
-      this.playerTwo = newPlayers[1];
+      this.playerOne = this.resetPlayer('playerOne');
+      this.playerTwo = this.resetPlayer('playerTwo');
+      this.broadcastSystemMessage("Rematch!");
     }
+  }
+
+  /**
+   * Reset a player's state by returning a new player object with the
+   * same name & socket property as the previous player.
+   * 
+   * @param {string} player The player to be reset
+   * 
+   * @return {Player} The new player object
+   */
+  resetPlayer(player) {
+    const name = this[player].getName();
+    const socket = this[player].getSocket();
+
+    const newPlayer = new Player();
+    newPlayer.setName(name);
+    newPlayer.setSocket(socket)
+
+    return newPlayer;
   }
 }
