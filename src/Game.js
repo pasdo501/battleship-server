@@ -53,6 +53,9 @@ export default class Game {
     );
     socket.on("chat", (message) => this.relayMessage(this[player], message));
 
+    // Rematch Logic
+    socket.on("requestRematch", () => this.requestRematch(player));
+
     // If neither is null, both must be set now
     if (this.playerOne !== null && this.playerTwo !== null) {
       this.io.to(this.room).emit("playersReady");
@@ -257,5 +260,37 @@ export default class Game {
    */
   playersReady() {
     return this.playerOne.isReady() && this.playerTwo.isReady();
+  }
+
+  /**
+   * Handle a rematch request from a given player. If this is the second
+   * request for a rematch, notify the room that the rematch has been accepted.
+   * 
+   * 
+   * @param {string} player The player requesting the rematch
+   */
+  requestRematch(player) {
+    const otherPlayer =
+      player === "playerOne" ? this.playerTwo : this.playerOne;
+
+    this[player].setRematchRequested(true);
+
+    if (otherPlayer.hasRequestedRematch()) {
+      this.io.to(this.room).emit("rematchAccepted");
+      // Reset player state
+      let newPlayers = [];
+      for (let player of [this.playerOne, this.playerTwo]) {
+        const name = player.getName();
+        const socket = player.getSocket();
+
+        const newPlayer = new Player();
+        newPlayer.setName(name);
+        newPlayer.setSocket(socket);
+        newPlayers.push(newPlayer);
+      }
+
+      this.playerOne = newPlayers[0];
+      this.playerTwo = newPlayers[1];
+    }
   }
 }

@@ -13,10 +13,11 @@ export default class Player {
   constructor() {
     this.socket = null;
     this.board = null;
-    this.ready = null;
+    this.ready = false;
     this.hitsTaken = Array(numShipTypes).fill(0);
     this.shipsLeft = numShipTypes;
     this.name = "";
+    this.rematchRequested = false;
   }
 
   /**
@@ -120,5 +121,23 @@ export default class Player {
    */
   isDefeated() {
     return this.shipsLeft <= 0;
+  }
+
+  /**
+   * Check if the player has requested a rematch
+   * 
+   * @return {boolean} Whether or not the remactch has been requested
+   */
+  hasRequestedRematch() {
+    return this.rematchRequested;
+  }
+
+  /**
+   * Set the player's rematch requested property to the given state.
+   * 
+   * @param {boolean} bool The new state for the rematch requested property
+   */
+  setRematchRequested(bool) {
+    this.rematchRequested = bool;
   }
 }
