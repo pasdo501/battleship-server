@@ -52,6 +52,6 @@ io.on("connection", (socket) => {
 });
 
 reset();
-const port = 8080;
+const port = process.env.PORT || 3000;
 io.listen(port);
 console.log(`Server listening on port ${port}...`);
